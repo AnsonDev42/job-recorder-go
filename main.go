@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-func showUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string) {
+func showUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string, updateCounterCh chan int) {
 	uploadFileButton := widget.NewButton("Upload File", func() {
 		dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
 			if err != nil || reader == nil {
@@ -46,6 +46,7 @@ func showUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string
 			}
 			dialog.ShowInformation("Success", "File uploaded successfully.", window)
 		}, window)
+		updateCounterCh <- 1
 	})
 
 	uploadClipboardButton := widget.NewButton("Upload from Clipboard", func() {
@@ -62,6 +63,7 @@ func showUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string
 			dialog.ShowError(err, window)
 			return
 		}
+		updateCounterCh <- 1
 		//dialog.ShowInformation("Success", "Image from clipboard uploaded successfully.", window)
 		time.Sleep(2 * time.Second)
 
@@ -167,8 +169,14 @@ func main() {
 	content := container.NewStack()
 
 	// Setup the counter
-	//counterLabel := widget.NewLabel("Images uploaded today: 0")
-	//updateCounter(counterLabel, uploadDir) // Initial count update
+	counterLabel := widget.NewLabel("Images uploaded today: 0")
+	updateCounter(counterLabel, uploadDir) // Initial count update
+	updateCounterCh := make(chan int)
+	go func() {
+		for range updateCounterCh {
+			updateCounter(counterLabel, uploadDir)
+		}
+	}()
 
 	// Set up the menu and content area
 	menu := setupMenu(myWindow, content, &uploadDir, updateCounterCh)
@@ -183,13 +191,13 @@ func main() {
 
 }
 
-func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string) fyne.CanvasObject {
+func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string, updateCounterCh chan int) fyne.CanvasObject {
 	err := clipboard.Init()
 	if err != nil {
 		panic(err)
 	}
 	uploadButton := widget.NewButton("Upload", func() {
-		showUploadUI(window, content, uploadDir)
+		showUploadUI(window, content, uploadDir, updateCounterCh)
 	})
 
 	historyButton := widget.NewButton("History", func() {
@@ -205,4 +213,23 @@ func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string) f
 	})
 
 	return container.NewVBox(uploadButton, historyButton, settingsButton)
+}
+
+func updateCounter(label *widget.Label, uploadDir string) {
+	files, err := os.ReadDir(uploadDir)
+	if err != nil {
+		log.Println("Failed to read upload directory:", err)
+		label.SetText("Images uploaded today: Error")
+		return
+	}
+
+	today := time.Now().Format("2006-01-02")
+	count := 0
+	for _, file := range files {
+		if strings.HasPrefix(file.Name(), today) && strings.HasSuffix(file.Name(), ".png") {
+			count++
+		}
+	}
+	fmt.Println("settings counter!")
+	label.SetText(fmt.Sprintf("Images uploaded today: %d", count))
 }
