@@ -14,6 +14,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -170,15 +171,16 @@ func main() {
 	//updateCounter(counterLabel, uploadDir) // Initial count update
 
 	// Set up the menu and content area
-	menu := setupMenu(myWindow, content, &uploadDir)
+	menu := setupMenu(myWindow, content, &uploadDir, updateCounterCh)
+	menuContentSplit := container.NewHSplit(menu, content)
+	menuContentSplit.Offset = 0.2 // Adjust the initial split ratio
+	mainContent := container.NewVSplit(counterLabel, menuContentSplit)
+	mainContent.Offset = 0.5
 
-	// Create the vertical split container
-	split := container.NewHSplit(menu, content)
-	split.Offset = 0.2 // Adjust the initial split ratio
-
-	myWindow.SetContent(split)
+	myWindow.SetContent(mainContent)
 	myWindow.Resize(fyne.NewSize(800, 600))
 	myWindow.ShowAndRun()
+
 }
 
 func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string) fyne.CanvasObject {
