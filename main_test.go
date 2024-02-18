@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"job-recorder-go/convertimage"
+	"job-recorder-go/internal/convertimage"
 	"os"
 	"path/filepath"
 	"testing"

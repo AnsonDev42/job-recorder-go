@@ -13,8 +13,8 @@ import (
 	"golang.design/x/clipboard"
 	"io"
 	"io/ioutil"
-	"job-recorder-go/convertimage"
-	"job-recorder-go/notification"
+	"job-recorder-go/internal/convertimage"
+	"job-recorder-go/internal/notification"
 	"log"
 	"os"
 	"path/filepath"
@@ -169,14 +169,14 @@ func main() {
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Job recorder go!")
 
-	uploadDir := "uploads"
+	uploadDir := "assets/uploads"
 	content := container.NewStack()
 
 	// Setup the counter
 	counterLabel := widget.NewLabel("Images uploaded today: 0")
 	updateCounter(counterLabel, uploadDir) // Initial count update
 	// Load App config
-	err := config.LoadFiles("dev-config.json")
+	err := config.LoadFiles("config/dev-config.json")
 	if err != nil {
 		_ = fmt.Errorf("failed to load json")
 	}
