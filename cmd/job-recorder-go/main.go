@@ -71,6 +71,7 @@ func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string, u
 
 	settingsButton := widget.NewButton("Settings", func() {
 		// Implement settings view
+		uploadjob.ShowSettingsUI(window, content, uploadDir)
 	})
 	return container.NewVBox(uploadButton, historyButton, settingsButton)
 }

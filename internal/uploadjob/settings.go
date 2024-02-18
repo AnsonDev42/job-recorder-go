@@ -18,6 +18,8 @@ func ShowSettingsUI(window fyne.Window, content *fyne.Container, rootFolder *str
 		}, window)
 	})
 
+	// set the daily goal
+
 	content.Objects = []fyne.CanvasObject{selectFolderButton}
 	content.Refresh()
 }
