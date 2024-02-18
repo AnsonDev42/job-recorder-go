@@ -2,7 +2,7 @@ package test
 
 import (
 	"fmt"
-	"job-recorder-go/internal/convertimage"
+	"job-recorder-go/internal/utils"
 	"path/filepath"
 	"testing"
 )
@@ -10,7 +10,7 @@ import (
 func TestImg2word(t *testing.T) {
 	uploadsPath := filepath.Join("..", "assets", "uploads", "test_image.png")
 	ocrPath := filepath.Join("..", "assets", "uploads", "test_image.txt")
-	word, err := convertimage.Img2word(&uploadsPath, &ocrPath)
+	word, err := utils.Img2word(&uploadsPath, &ocrPath)
 	if err != nil {
 		t.Errorf("error when calling img2word: %s", err)
 	}

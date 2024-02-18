@@ -1,4 +1,4 @@
-package convertimage
+package utils
 
 import (
 	"bufio"

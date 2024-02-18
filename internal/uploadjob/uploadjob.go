@@ -10,7 +10,7 @@ import (
 	"github.com/nikoksr/notify"
 	"golang.design/x/clipboard"
 	"io"
-	"job-recorder-go/internal/convertimage"
+	"job-recorder-go/internal/utils"
 	"log"
 	"os"
 	"path/filepath"
@@ -67,7 +67,7 @@ func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string
 		//dialog.ShowInformation("Success", "Image from clipboard uploaded successfully.", window)
 		time.Sleep(2 * time.Second)
 
-		word, err := convertimage.Img2word(&filePath, &ocrPath)
+		word, err := utils.Img2word(&filePath, &ocrPath)
 		if err != nil {
 			dialog.ShowError(err, window)
 			return
