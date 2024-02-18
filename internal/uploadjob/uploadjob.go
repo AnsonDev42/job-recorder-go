@@ -100,25 +100,81 @@ func CounterUpdator(updateCounterCh chan int, counterLabel *widget.Label, upload
 		}
 	}
 }
-
-func UpdateCounterLabel(label *widget.Label, uploadDir string) (count int, err error) {
-	files, err := os.ReadDir(uploadDir)
+func CountTodayJobs() (int, error) {
+	uploadsDir := config.String("rootFolder")
+	files, err := os.ReadDir(uploadsDir)
 	if err != nil {
 		log.Println("Failed to read upload directory:", err)
-		label.SetText("Images uploaded today: Error")
 		return 0, err
 	}
 
 	today := time.Now().Format("2006-01-02")
-	count = 0
+	count := 0
 	for _, file := range files {
 		if strings.HasPrefix(file.Name(), today) && strings.HasSuffix(file.Name(), ".png") {
 			count++
 		}
 	}
-	fmt.Println("settings counter!")
+	return count, nil
+}
+func UpdateCounterLabel(label *widget.Label, uploadDir string) (count int, err error) {
+	count, err = CountTodayJobs()
+	if err != nil {
+		return 0, err
+	}
+	log.Println("settings counter!")
 	f := fmt.Sprint("You have applied ", count, " jobs, one step closer to your daily goal of ", config.Int("dailyGoal"))
 	label.SetText(f)
 
 	return count, nil
+}
+
+func SummarizeTodaysWork() (string, error) {
+	// Get today's date as a string prefix
+	today := time.Now().Format("2006-01-02")
+
+	// Directory where the files are stored
+	uploadsDir := config.String("rootFolder")
+
+	// Open the directory
+	files, err := os.ReadDir(uploadsDir)
+	if err != nil {
+		log.Fatal("Error reading directory:", err)
+		return "", err
+	}
+	count, err := CountTodayJobs() // create a summary string: currently just concatenating all the OCR
+	if err != nil {
+		return "summarizer error", err
+	}
+	var summary string
+	summary += fmt.Sprintf("Today's work summary: (%s,%s) \n", count, config.Int("dailyGoal", -1))
+	summary += "---------------------\n"
+	// Iterate over the files in the directory
+	for _, file := range files {
+		// Check if the file name starts with today's date and has a .txt extension
+		if strings.HasPrefix(file.Name(), today) && strings.HasSuffix(file.Name(), ".txt") {
+			// Read the file
+			content, err := os.ReadFile(fmt.Sprintf("%s/%s", uploadsDir, file.Name()))
+			if err != nil {
+				fmt.Println("Error reading file:", file.Name(), err)
+				continue // Skip to the next file upon error
+			}
+			// Concatenate the content to the summary
+			summary += string(content) + "\n" // Adding a newline for separation
+		}
+	}
+
+	return summary, nil
+}
+
+func SendSummary() {
+	summary, err := SummarizeTodaysWork()
+	err = notify.Send(
+		context.Background(),
+		"Today's work summary",
+		summary,
+	)
+	if err != nil {
+		fmt.Errorf("failed to send the notification")
+	}
 }

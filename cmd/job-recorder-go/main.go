@@ -9,10 +9,13 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"github.com/go-co-op/gocron"
 	"github.com/gookit/config/v2"
 	"golang.design/x/clipboard"
 	"job-recorder-go/internal/uploadjob"
 	"job-recorder-go/internal/utils"
+	"log"
+	"time"
 )
 
 func countDaily(today *string) {
@@ -23,13 +26,9 @@ func main() {
 	myWindow := myApp.NewWindow("Job recorder go!")
 
 	uploadDir := "assets/uploads"
+
 	content := container.NewStack()
 
-	// Setup the counter
-	counterLabel := widget.NewLabel("Images uploaded today: 0")
-	counterLabel.TextStyle = fyne.TextStyle{Bold: true}
-	counterLabel.Resize(fyne.NewSize(200, 100))
-	uploadjob.UpdateCounterLabel(counterLabel, uploadDir) // Initial count update
 	// Load App config
 	configPATH := "config/dev-config.json"
 	err := config.LoadFiles(configPATH)
@@ -37,6 +36,16 @@ func main() {
 		_ = fmt.Errorf("failed to load json")
 	}
 	config.Set("configPATH", configPATH)
+	config.Set("rootFolder", uploadDir)
+
+	// Setup the counter
+	counterLabel := widget.NewLabel("Images uploaded today: 0")
+	counterLabel.TextStyle = fyne.TextStyle{Bold: true}
+	counterLabel.Resize(fyne.NewSize(200, 100))
+	_, err = uploadjob.UpdateCounterLabel(counterLabel, uploadDir)
+	if err != nil {
+		log.Fatalf("failed to update counter label: %s", err)
+	} // Initial count update
 
 	// Setup telegram notification
 	err = utils.SetupTelegramBot(config.String("tgApi"), config.String("tgReceiverID"))
@@ -53,6 +62,9 @@ func main() {
 	menuContentSplit.Offset = 0.2 // Adjust the initial split ratio
 	mainContent := container.NewVSplit(container.New(layout.NewCenterLayout(), counterLabel), menuContentSplit)
 	mainContent.Offset = 0.5
+	s := gocron.NewScheduler(time.UTC)
+
+	utils.SetSummaryScheduler(s, uploadjob.SendSummary)
 
 	if desk, ok := myApp.(desktop.App); ok {
 		m := fyne.NewMenu("Job-Recorder",
