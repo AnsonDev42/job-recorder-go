@@ -8,8 +8,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/gookit/config/v2"
 	"golang.design/x/clipboard"
-	"job-recorder-go/internal/notification"
 	"job-recorder-go/internal/uploadjob"
+	"job-recorder-go/internal/utils"
 )
 
 func countDaily(today *string) {
@@ -31,7 +31,7 @@ func main() {
 		_ = fmt.Errorf("failed to load json")
 	}
 	// Setup telegram notification
-	err = notification.SetupTelegramBot(config.String("tgApi"), config.String("tgReceiverID"))
+	err = utils.SetupTelegramBot(config.String("tgApi"), config.String("tgReceiverID"))
 	if err != nil {
 		panic("error setting up telegram notification!")
 	}
