@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
+	"github.com/gookit/config/v2"
 	"github.com/nikoksr/notify"
 	"golang.design/x/clipboard"
 	"io"
@@ -92,7 +93,7 @@ func CounterUpdator(updateCounterCh chan int, counterLabel *widget.Label, upload
 		err = notify.Send(
 			context.Background(),
 			"Another hardworking day!",
-			fmt.Sprint("You have applied", count, "jobs, one step closer to your goal!"),
+			fmt.Sprint("You have applied", count, "jobs, one step closer to your daily goal of ", config.Int("dailyGoal")),
 		)
 		if err != nil {
 			fmt.Errorf("failed to send the notification")
@@ -116,6 +117,8 @@ func UpdateCounterLabel(label *widget.Label, uploadDir string) (count int, err e
 		}
 	}
 	fmt.Println("settings counter!")
-	label.SetText(fmt.Sprintf("Images uploaded today: %d", count))
+	f := fmt.Sprint("You have applied ", count, " jobs, one step closer to your daily goal of ", config.Int("dailyGoal"))
+	label.SetText(f)
+
 	return count, nil
 }
