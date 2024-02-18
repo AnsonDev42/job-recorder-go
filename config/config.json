@@ -1,0 +1,4 @@
+{
+  "tgApi": "your telegram api",
+  "tgReceiverID":  "your telegram chat ID"
+}

@@ -50,4 +50,4 @@ require (
 	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
 )
 
-//replace example.com/convertimage => ./convertimage
+//replace example.com/utils => ./utils
