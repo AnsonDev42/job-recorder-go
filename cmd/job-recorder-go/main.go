@@ -26,10 +26,13 @@ func main() {
 	counterLabel := widget.NewLabel("Images uploaded today: 0")
 	uploadjob.UpdateCounterLabel(counterLabel, uploadDir) // Initial count update
 	// Load App config
-	err := config.LoadFiles("config/dev-config.json")
+	configPATH := "config/dev-config.json"
+	err := config.LoadFiles(configPATH)
 	if err != nil {
 		_ = fmt.Errorf("failed to load json")
 	}
+	config.Set("configPATH", configPATH)
+
 	// Setup telegram notification
 	err = utils.SetupTelegramBot(config.String("tgApi"), config.String("tgReceiverID"))
 	if err != nil {
