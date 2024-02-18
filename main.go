@@ -1,16 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
+	"github.com/gookit/config/v2"
+	"github.com/nikoksr/notify"
 	"golang.design/x/clipboard"
 	"io"
 	"io/ioutil"
 	"job-recorder-go/convertimage"
+	"job-recorder-go/notification"
 	"log"
 	"os"
 	"path/filepath"
@@ -171,10 +175,32 @@ func main() {
 	// Setup the counter
 	counterLabel := widget.NewLabel("Images uploaded today: 0")
 	updateCounter(counterLabel, uploadDir) // Initial count update
+	// Load App config
+	err := config.LoadFiles("dev-config.json")
+	if err != nil {
+		_ = fmt.Errorf("failed to load json")
+	}
+
+	err = notification.SetupTelegramBot(config.String("tgApi"), config.String("tgReceiverID"))
+	if err != nil {
+		panic("error setting up telegram notification!")
+	}
 	updateCounterCh := make(chan int)
 	go func() {
 		for range updateCounterCh {
-			updateCounter(counterLabel, uploadDir)
+
+			count, err := updateCounter(counterLabel, uploadDir)
+			if err != nil {
+				fmt.Println("failed to update counter")
+			}
+			err = notify.Send(
+				context.Background(),
+				"Another hardworking day!",
+				fmt.Sprint("You have applied", count, "jobs, one step closer to your goal!"),
+			)
+			if err != nil {
+				fmt.Errorf("failed to send the notification")
+			}
 		}
 	}()
 
@@ -215,16 +241,16 @@ func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string, u
 	return container.NewVBox(uploadButton, historyButton, settingsButton)
 }
 
-func updateCounter(label *widget.Label, uploadDir string) {
+func updateCounter(label *widget.Label, uploadDir string) (count int, err error) {
 	files, err := os.ReadDir(uploadDir)
 	if err != nil {
 		log.Println("Failed to read upload directory:", err)
 		label.SetText("Images uploaded today: Error")
-		return
+		return 0, err
 	}
 
 	today := time.Now().Format("2006-01-02")
-	count := 0
+	count = 0
 	for _, file := range files {
 		if strings.HasPrefix(file.Name(), today) && strings.HasSuffix(file.Name(), ".png") {
 			count++
@@ -232,4 +258,5 @@ func updateCounter(label *widget.Label, uploadDir string) {
 	}
 	fmt.Println("settings counter!")
 	label.SetText(fmt.Sprintf("Images uploaded today: %d", count))
+	return count, nil
 }
