@@ -5,6 +5,9 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/gookit/config/v2"
 	"golang.design/x/clipboard"
@@ -24,6 +27,8 @@ func main() {
 
 	// Setup the counter
 	counterLabel := widget.NewLabel("Images uploaded today: 0")
+	counterLabel.TextStyle = fyne.TextStyle{Bold: true}
+	counterLabel.Resize(fyne.NewSize(200, 100))
 	uploadjob.UpdateCounterLabel(counterLabel, uploadDir) // Initial count update
 	// Load App config
 	configPATH := "config/dev-config.json"
@@ -46,9 +51,30 @@ func main() {
 	menu := setupMenu(myWindow, content, &uploadDir, updateCounterCh)
 	menuContentSplit := container.NewHSplit(menu, content)
 	menuContentSplit.Offset = 0.2 // Adjust the initial split ratio
-	mainContent := container.NewVSplit(counterLabel, menuContentSplit)
+	mainContent := container.NewVSplit(container.New(layout.NewCenterLayout(), counterLabel), menuContentSplit)
 	mainContent.Offset = 0.5
 
+	if desk, ok := myApp.(desktop.App); ok {
+		m := fyne.NewMenu("Job-Recorder",
+			fyne.NewMenuItem("Show", func() {
+				myWindow.Show()
+			}))
+		fyne.NewMenuItem("Quit", func() {
+			myApp.Quit()
+		})
+		fyne.NewMenuItem("Copy from clipboard", func() {
+			//todo: atomic upload from the uploadjob UI
+			//uploadjob.UploadFromClipboard(&uploadDir, updateCounterCh)
+			dialog.ShowInformation("Not implemented yet", "This feature is not implemented yet", myWindow)
+		})
+
+		desk.SetSystemTrayMenu(m)
+	}
+
+	myWindow.SetContent(widget.NewLabel("Fyne System Tray"))
+	myWindow.SetCloseIntercept(func() {
+		myWindow.Hide()
+	})
 	myWindow.SetContent(mainContent)
 	myWindow.Resize(fyne.NewSize(800, 600))
 	myWindow.ShowAndRun()
