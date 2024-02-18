@@ -5,14 +5,13 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
 )
 
 func ShowHistoryUI(content *fyne.Container, rootFolder string) {
-	files, err := ioutil.ReadDir(rootFolder)
+	files, err := os.ReadDir(rootFolder)
 	if err != nil {
 		content.Objects = []fyne.CanvasObject{widget.NewLabel("Failed to load history")}
 		content.Refresh()
