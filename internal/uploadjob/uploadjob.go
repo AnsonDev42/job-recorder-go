@@ -19,6 +19,25 @@ import (
 	"time"
 )
 
+func uploadJobFromByte(imgData []byte, uploadDir string, updateCounterCh chan int) (string, error) {
+	// Assume imgData is PNG encoded. Save it to the upload directory.
+	uploadFileTime := time.Now().Format("2006-01-02-15-04-05.000")
+	uploadFileName := uploadFileTime + ".png"
+	ocrFileName := uploadFileTime + ".txt"
+	filePath := filepath.Join(uploadDir, uploadFileName) // Consider generating unique names
+	ocrPath := filepath.Join(uploadDir, ocrFileName)
+	err := os.WriteFile(filePath, imgData, 0644)
+	if err != nil {
+		return "", err
+	}
+	updateCounterCh <- 1
+	word, err := utils.Img2word(&filePath, &ocrPath)
+	if err != nil {
+		return "", err
+	}
+	return word, nil
+
+}
 func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string, updateCounterCh chan int) {
 	uploadFileButton := widget.NewButton("Upload File", func() {
 		dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
@@ -31,48 +50,28 @@ func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string
 
 				}
 			}(reader)
-
-			// copy the file into the uploadDir
-			uploadFileName := filepath.Base(reader.URI().Path())
-			uploadFilePath := filepath.Join(*uploadDir, uploadFileName)
 			imgData, err := io.ReadAll(reader)
 			if err != nil {
 				dialog.ShowError(err, window)
 				return
 			}
-			err = os.WriteFile(uploadFilePath, imgData, 0644)
+			_, err = uploadJobFromByte(imgData, *uploadDir, updateCounterCh)
 			if err != nil {
-				dialog.ShowError(err, window)
 				return
 			}
-			dialog.ShowInformation("Success", "File uploaded successfully.", window)
 		}, window)
-		updateCounterCh <- 1
 	})
 
 	uploadClipboardButton := widget.NewButton("Upload from Clipboard", func() {
 		// Implement the clipboard reading and image saving logic here
 		imgData := clipboard.Read(clipboard.FmtImage)
 		// Assume imgData is PNG encoded. Save it to the upload directory.
-		uploadFileTime := time.Now().Format("2006-01-02-15-04-05.000")
-		uploadFileName := uploadFileTime + ".png"
-		ocrFileName := uploadFileTime + ".txt"
-		filePath := filepath.Join(*uploadDir, uploadFileName) // Consider generating unique names
-		ocrPath := filepath.Join(*uploadDir, ocrFileName)
-		err := os.WriteFile(filePath, imgData, 0644)
+		word, err := uploadJobFromByte(imgData, *uploadDir, updateCounterCh)
 		if err != nil {
 			dialog.ShowError(err, window)
 			return
 		}
-		updateCounterCh <- 1
-		//dialog.ShowInformation("Success", "Image from clipboard uploaded successfully.", window)
-		time.Sleep(2 * time.Second)
 
-		word, err := utils.Img2word(&filePath, &ocrPath)
-		if err != nil {
-			dialog.ShowError(err, window)
-			return
-		}
 		dialog.ShowInformation("OCR Results", word, window)
 		//fmt.Println(word)
 		return
