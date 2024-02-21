@@ -98,6 +98,10 @@ func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string, u
 	if err != nil {
 		panic(err)
 	}
+	shortCutAction := func() {
+		uploadjob.ShowUploadUI(window, content, uploadDir, updateCounterCh)
+	}
+	defer shortCutAction()
 	uploadButton := widget.NewButton("Upload", func() {
 		uploadjob.ShowUploadUI(window, content, uploadDir, updateCounterCh)
 	})
