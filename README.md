@@ -2,8 +2,7 @@
 Welcome to Job Recorder Go, an innovative solution designed to streamline the job application process for seekers everywhere. Born out of personal experience and the need for efficiency, this application automates the tedious task of tracking job applications. By leveraging OCR and LLM for summarization, Job Recorder Go transforms your job search recording experience into a manageable and insightful journey. 
 
 ## Motivation
-The idea for Job Recorder Go sparked from my own challenges while navigating the sea of job applications. I found myself overwhelmed by the manual effort required to log and analyze each application. It was not only time-consuming but boring
-I found myself overwhelmed by the manual effort required to log and analyze each application. It was not only time-consuming but also detracted from the time I could spend on actually applying or enhancing my skills. I hope this app can make life easier for everyone and the future me.
+The idea for Job Recorder Go sparked from my own challenges while navigating the sea of job applications. I found myself overwhelmed by the manual effort required to log and analyze each application. I found myself overwhelmed by the manual effort required to log and analyze each application in Notion/google docs. It was not only time-consuming but also detracted from the time I could spend on actually applying or enhancing my skills. I hope this app can make life easier for me in the future or anyone in need.
 
 ## A solution
 
@@ -11,10 +10,19 @@ Instead putting your just-applied job info into multiple columns in Notion, you 
 
 In addition, every day it sends you a email (for now only telegram bot notification) with the summarisation of your work today and encourage you ((WIP) if you reach the goal or not.
 
+![Settings-ui](https://github.com/AnsonDev42/job-recorder-go/assets/58594437/899ff06e-1597-4cda-9d65-76f03831c8ee)
+![Upload-ui](https://github.com/AnsonDev42/job-recorder-go/assets/58594437/ed8c2afe-4d94-4866-89db-81a8af14e20c)
+![History-ui](https://github.com/AnsonDev42/job-recorder-go/assets/58594437/89155414-b3b6-46c3-bb45-5e583fae4e00)
+
 ## Project usage
 A single binary executable file. 
 
-or compile/run by yourself: ```$git clone``` then ```$go run cmd/job-recorder-go/main.go```
+Compile/run by yourself 
+```
+$ git clone https://github.com/AnsonDev42/job-recorder-go.git
+$ cd job-recorder-go
+$ go run cmd/job-recorder-go/main.go
+``` 
 
 ## Project setup
 
