@@ -30,6 +30,8 @@ func ShowSettingsUI(window fyne.Window, content *fyne.Container, rootFolder *str
 	tgApiKey.SetText(config.String("tgApi", ""))
 	tgReceiverID := widget.NewEntry()
 	tgReceiverID.SetText(config.String("tgReceiverID", ""))
+	oaiAPIKey := widget.NewEntry()
+	oaiAPIKey.SetText(config.String("openaiKey", ""))
 
 	// Save action
 	saveAction := func() {
@@ -44,6 +46,7 @@ func ShowSettingsUI(window fyne.Window, content *fyne.Container, rootFolder *str
 		config.Set("dailyGoal", newDailyGoal)
 		config.Set("tgApi", newTgApi)
 		config.Set("tgReceiverID", newTgReceiverID)
+		config.Set("openaiKey", oaiAPIKey.Text)
 
 		// Call SaveConfig to write changes to file
 		SaveConfig()
@@ -55,6 +58,7 @@ func ShowSettingsUI(window fyne.Window, content *fyne.Container, rootFolder *str
 			{Text: "Daily Goal", Widget: dailyGoal},
 			{Text: "Telegram API key", Widget: tgApiKey},
 			{Text: "Telegram receiver ID", Widget: tgReceiverID},
+			{Text: "OpenAI API key", Widget: oaiAPIKey},
 		},
 		OnSubmit: func() { // optional, handle form submission
 			log.Println("tg api :", tgApiKey.Text)
