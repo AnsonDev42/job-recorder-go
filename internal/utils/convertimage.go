@@ -34,7 +34,12 @@ func Img2word(imgPath *string, ocrPath *string) (string, error) {
 		log.Fatal(err)
 		return "", err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatalf("failed to close file: %s", err)
+		}
+	}(file)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		results += scanner.Text()
