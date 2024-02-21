@@ -42,7 +42,7 @@ func main() {
 	counterLabel := widget.NewLabel("Images uploaded today: 0")
 	counterLabel.TextStyle = fyne.TextStyle{Bold: true}
 	counterLabel.Resize(fyne.NewSize(200, 100))
-	_, err = uploadjob.UpdateCounterLabel(counterLabel, uploadDir)
+	_, err = uploadjob.UpdateCounterLabel(counterLabel)
 	if err != nil {
 		log.Fatalf("failed to update counter label: %s", err)
 	} // Initial count update
@@ -54,7 +54,7 @@ func main() {
 	}
 	// Setup Counter updator
 	updateCounterCh := make(chan int)
-	go uploadjob.CounterUpdator(updateCounterCh, counterLabel, uploadDir)
+	go uploadjob.CounterUpdator(updateCounterCh, counterLabel)
 
 	// Set up the menu and content area
 	menu := setupMenu(myWindow, content, &uploadDir, updateCounterCh)

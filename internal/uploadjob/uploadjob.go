@@ -84,9 +84,9 @@ func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string
 	content.Refresh()
 }
 
-func CounterUpdator(updateCounterCh chan int, counterLabel *widget.Label, uploadDir string) {
+func CounterUpdator(updateCounterCh chan int, counterLabel *widget.Label) {
 	for range updateCounterCh {
-		count, err := UpdateCounterLabel(counterLabel, uploadDir)
+		count, err := UpdateCounterLabel(counterLabel)
 		if err != nil {
 			fmt.Println("failed to update counter")
 		}
@@ -117,7 +117,7 @@ func CountTodayJobs() (int, error) {
 	}
 	return count, nil
 }
-func UpdateCounterLabel(label *widget.Label, uploadDir string) (count int, err error) {
+func UpdateCounterLabel(label *widget.Label) (count int, err error) {
 	count, err = CountTodayJobs()
 	if err != nil {
 		return 0, err
