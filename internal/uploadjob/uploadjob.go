@@ -2,6 +2,7 @@ package uploadjob
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -38,6 +39,26 @@ func uploadJobFromByte(imgData []byte, uploadDir string, updateCounterCh chan in
 	return word, uploadFileTime, nil
 
 }
+func saveJobSummary(job utils.Job, uploadDir string, uploadFileTime string) error {
+	// Save the job summary to a file
+	summaryFileName := uploadFileTime + ".json"
+	// check if uploadDir/summary exists, if not create it
+	summaryDir := filepath.Join(uploadDir, "summary")
+	if _, err := os.Stat(summaryDir); os.IsNotExist(err) {
+		err := os.Mkdir(summaryDir, 0755)
+		if err != nil {
+			return err
+		}
+	}
+	summaryPath := filepath.Join(uploadDir, "summary", summaryFileName)
+	jsonBytes, err := json.MarshalIndent(job, "", "  ")
+	if err != nil {
+		fmt.Println("Error marshaling to JSON:", err)
+		return err
+	}
+	err = os.WriteFile(summaryPath, jsonBytes, 0644)
+	return err
+}
 func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string, updateCounterCh chan int) {
 	uploadFileButton := widget.NewButton("Upload File", func() {
 		dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
@@ -59,6 +80,14 @@ func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string
 			if err != nil {
 				return
 			}
+			job, err := utils.SummarizeText(ocrResult)
+			go func() {
+				err := saveJobSummary(job, *uploadDir, ftime)
+				if err != nil {
+					dialog.ShowError(err, window)
+				}
+			}()
+			dialog.ShowInformation("Summary result:", fmt.Sprint(job), window)
 		}, window)
 	})
 
@@ -72,7 +101,19 @@ func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string
 			return
 		}
 
-		dialog.ShowInformation("OCR Results", word, window)
+		job, err := utils.SummarizeText(ocrResult)
+		if err != nil {
+			dialog.ShowError(err, window)
+			return
+		}
+		go func() {
+			err := saveJobSummary(job, *uploadDir, ftime)
+			if err != nil {
+				dialog.ShowError(err, window)
+			}
+		}()
+		dialog.ShowInformation("Summary result:", fmt.Sprint(job), window)
+
 		//fmt.Println(word)
 		return
 	})
