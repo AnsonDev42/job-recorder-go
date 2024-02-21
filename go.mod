@@ -4,8 +4,10 @@ go 1.21
 
 require (
 	fyne.io/fyne/v2 v2.4.3
+	github.com/go-co-op/gocron v1.37.0
 	github.com/gookit/config/v2 v2.2.5
 	github.com/nikoksr/notify v0.41.0
+	github.com/sashabaranov/go-openai v1.19.4
 	golang.design/x/clipboard v0.7.0
 )
 
@@ -18,7 +20,6 @@ require (
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504 // indirect
 	github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2 // indirect
-	github.com/go-co-op/gocron v1.37.0 // indirect
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20231223183121-56fa3ac82ce7 // indirect
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible // indirect
