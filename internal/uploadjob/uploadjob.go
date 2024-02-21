@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-func uploadJobFromByte(imgData []byte, uploadDir string, updateCounterCh chan int) (string, error) {
+func uploadJobFromByte(imgData []byte, uploadDir string, updateCounterCh chan int) (string, string, error) {
 	// Assume imgData is PNG encoded. Save it to the upload directory.
 	uploadFileTime := time.Now().Format("2006-01-02-15-04-05.000")
 	uploadFileName := uploadFileTime + ".png"
@@ -28,14 +28,14 @@ func uploadJobFromByte(imgData []byte, uploadDir string, updateCounterCh chan in
 	ocrPath := filepath.Join(uploadDir, ocrFileName)
 	err := os.WriteFile(filePath, imgData, 0644)
 	if err != nil {
-		return "", err
+		return "", uploadFileTime, err
 	}
 	updateCounterCh <- 1
 	word, err := utils.Img2word(&filePath, &ocrPath)
 	if err != nil {
-		return "", err
+		return "", uploadFileTime, err
 	}
-	return word, nil
+	return word, uploadFileTime, nil
 
 }
 func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string, updateCounterCh chan int) {
@@ -55,7 +55,7 @@ func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string
 				dialog.ShowError(err, window)
 				return
 			}
-			_, err = uploadJobFromByte(imgData, *uploadDir, updateCounterCh)
+			ocrResult, ftime, err := uploadJobFromByte(imgData, *uploadDir, updateCounterCh)
 			if err != nil {
 				return
 			}
@@ -66,7 +66,7 @@ func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string
 		// Implement the clipboard reading and image saving logic here
 		imgData := clipboard.Read(clipboard.FmtImage)
 		// Assume imgData is PNG encoded. Save it to the upload directory.
-		word, err := uploadJobFromByte(imgData, *uploadDir, updateCounterCh)
+		ocrResult, ftime, err := uploadJobFromByte(imgData, *uploadDir, updateCounterCh)
 		if err != nil {
 			dialog.ShowError(err, window)
 			return
