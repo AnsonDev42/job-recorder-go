@@ -174,7 +174,7 @@ func SummarizeTodaysWork() (string, error) {
 	if err != nil {
 		return "summarizer error", err
 	}
-	jobs, err := GetTodaysJobFromFile()
+	jobs, _, err := GetTodaysJobFromFile()
 	if err != nil {
 		return "summarizer error", err
 	}
@@ -194,8 +194,8 @@ func SummarizeTodaysWork() (string, error) {
 	return summary, nil
 }
 
-func GetTodaysJobFromFile() ([]utils.Job, error) {
-	// Get jobs from today from the summary directory, return as a slice of Job
+func GetTodaysJobFromFile() ([]utils.Job, []string, error) {
+	// Get jobs from today from the summary directory, return list of Job and list of file names(without-suffix)
 	// Get today's date as a string prefix
 	today := time.Now().Format("2006-01-02")
 
@@ -205,9 +205,10 @@ func GetTodaysJobFromFile() ([]utils.Job, error) {
 	// Open the directory
 	files, err := os.ReadDir(summaryDir)
 	var allSummary []utils.Job
+	var allFileNames []string
 	if err != nil {
 		log.Fatal("Error reading summary directory:", err)
-		return allSummary, err
+		return allSummary, allFileNames, err
 	}
 	// Iterate over the files in the directory
 	for _, file := range files {
@@ -226,9 +227,10 @@ func GetTodaysJobFromFile() ([]utils.Job, error) {
 				continue // Skip to the next file upon error
 			}
 			allSummary = append(allSummary, job)
+			allFileNames = append(allFileNames, strings.TrimSuffix(file.Name(), ".json"))
 		}
 	}
-	return allSummary, nil
+	return allSummary, allFileNames, nil
 }
 
 func SendSummary() {

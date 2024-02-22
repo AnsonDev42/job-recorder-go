@@ -5,6 +5,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
+	"golang.design/x/clipboard"
 	"os"
 	"strconv"
 )
@@ -28,19 +29,19 @@ func ShowHistoryUI(content *fyne.Container, rootFolder string) {
 }
 
 func CreateHistoryTable(uploadDir string) *widget.Table {
-	todayJobs, err := GetTodaysJobFromFile()
+	todayJobs, filenames, err := GetTodaysJobFromFile()
 	if err != nil {
 		return nil
 	}
 	// Define your table data
 	fileInfos := make([][4]string, len(todayJobs))
 	for i, job := range todayJobs {
-		fileInfos[i] = [4]string{job.JobTitle, job.CompanyName, job.JobDescription}
+		fileInfos[i] = [4]string{job.JobTitle, job.CompanyName, filenames[i][:len(filenames[i])-4], job.JobDescription}
 	}
 
 	table := widget.NewTableWithHeaders(
 		func() (int, int) {
-			return len(fileInfos), 3 // Rows, Columns
+			return len(fileInfos), 4 // Rows, Columns
 		},
 		func() fyne.CanvasObject {
 			return NewHoverLabel("", "") // Create a new HoverLabel for each cell
@@ -59,9 +60,10 @@ func CreateHistoryTable(uploadDir string) *widget.Table {
 			widget.NewLabel(""),
 			widget.NewLabel(""),
 			widget.NewLabel(""),
+			widget.NewLabel(""),
 		)
 	}
-	headerLabels := []string{"Position", "Company", "Summary", "Fourth Column"} // Labels for headers
+	headerLabels := []string{"Position", "Company", "Time", "Summary"} // Labels for headers
 	table.UpdateHeader = func(id widget.TableCellID, template fyne.CanvasObject) {
 		if id.Col >= 0 && id.Col < len(headerLabels) {
 			header := template.(*fyne.Container).Objects[id.Col].(*widget.Label) // Access the specific header label by index
@@ -76,7 +78,8 @@ func CreateHistoryTable(uploadDir string) *widget.Table {
 	// Set a minimum width for the table to ensure content is less likely to overlap
 	table.SetColumnWidth(0, 100)
 	table.SetColumnWidth(1, 150)
-	table.SetColumnWidth(2, 300)
+	table.SetColumnWidth(2, 150)
+	table.SetColumnWidth(3, 300)
 
 	return table
 }
@@ -99,6 +102,7 @@ func (l *HoverLabel) MouseIn(*desktop.MouseEvent) {
 	l.TextStyle.Bold = true
 	l.SetText(l.hoverText)
 	l.Refresh()
+	clipboard.Write(clipboard.FmtText, []byte(l.hoverText))
 }
 
 func (l *HoverLabel) MouseMoved(*desktop.MouseEvent) {
