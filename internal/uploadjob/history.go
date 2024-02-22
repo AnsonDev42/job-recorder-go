@@ -1,13 +1,11 @@
 package uploadjob
 
 import (
-	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"log"
 	"os"
-	"time"
+	"strconv"
 )
 
 func ShowHistoryUI(content *fyne.Container, rootFolder string) {
@@ -29,26 +27,19 @@ func ShowHistoryUI(content *fyne.Container, rootFolder string) {
 }
 
 func CreateHistoryTable(uploadDir string) *widget.Table {
-	files, err := os.ReadDir(uploadDir)
+	todayJobs, err := GetTodaysJobFromFile()
 	if err != nil {
-		log.Println("Failed to read upload directory:", err)
 		return nil
 	}
-
 	// Define your table data
-	fileInfos := make([][2]string, len(files))
-	for i, fileInfo := range files {
-		file, err := fileInfo.Info()
-		if err != nil {
-			fmt.Println("Error getting file info:", err)
-			continue
-		}
-		fileInfos[i] = [2]string{file.Name(), file.ModTime().Format(time.RFC1123)}
+	fileInfos := make([][4]string, len(todayJobs))
+	for i, job := range todayJobs {
+		fileInfos[i] = [4]string{job.JobTitle, job.CompanyName, job.JobDescription}
 	}
 
-	table := widget.NewTable(
+	table := widget.NewTableWithHeaders(
 		func() (int, int) {
-			return len(fileInfos), 2 // Rows, Columns
+			return len(fileInfos), 3 // Rows, Columns
 		},
 		func() fyne.CanvasObject {
 			return widget.NewLabel("") // This will create a new cell
@@ -58,10 +49,30 @@ func CreateHistoryTable(uploadDir string) *widget.Table {
 			cell.(*widget.Label).SetText(fileInfos[id.Row][id.Col])
 		},
 	)
+	// set custom header: show column names and row numbers
+	table.CreateHeader = func() fyne.CanvasObject {
+		return container.NewHBox(
+			widget.NewLabel(""),
+			widget.NewLabel(""),
+			widget.NewLabel(""),
+		)
+	}
+	headerLabels := []string{"Position", "Company", "Summary", "Fourth Column"} // Labels for headers
+	table.UpdateHeader = func(id widget.TableCellID, template fyne.CanvasObject) {
+		if id.Col >= 0 && id.Col < len(headerLabels) {
+			header := template.(*fyne.Container).Objects[id.Col].(*widget.Label) // Access the specific header label by index
+			header.SetText(headerLabels[id.Col])                                 // Set the text for the header based on the column
+		}
+		if id.Row >= 0 {
+			header := template.(*fyne.Container).Objects[0].(*widget.Label) // Access the specific header label by index
+			header.SetText(strconv.Itoa(id.Row))                            // Set the text for the header based on the column
+		}
+	}
 
 	// Set a minimum width for the table to ensure content is less likely to overlap
-	table.SetColumnWidth(0, 300)
-	table.SetColumnWidth(1, 300)
+	table.SetColumnWidth(0, 100)
+	table.SetColumnWidth(1, 100)
+	table.SetColumnWidth(2, 300)
 
 	// Customize each column's width (not directly supported, but you can indirectly influence it)
 	// For example, you can format your data to ensure it fits within your designated widths
