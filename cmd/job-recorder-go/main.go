@@ -18,9 +18,6 @@ import (
 	"time"
 )
 
-func countDaily(today *string) {
-
-}
 func main() {
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Job recorder go!")
