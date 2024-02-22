@@ -170,41 +170,65 @@ func UpdateCounterLabel(label *widget.Label) (count int, err error) {
 }
 
 func SummarizeTodaysWork() (string, error) {
+	count, err := CountTodayJobs() // create a summary string: currently just concatenating all the OCR
+	if err != nil {
+		return "summarizer error", err
+	}
+	jobs, err := getTodaysJobFromFile()
+	if err != nil {
+		return "summarizer error", err
+	}
+	plainJob := ""
+	for _, job := range jobs {
+		jobText := fmt.Sprintf("Company: %s\nTitle: %s\nDescription: %s\n", job.JobTitle, job.CompanyName, job.JobDescription)
+		plainJob += jobText + "\n"
+	}
+
+	var summary string
+	summary += "---------------------\n---------------------\n"
+	summary += fmt.Sprintf("%s Today's work summary: %d / %d\n", time.Now().Format("2006-01-02"),
+		count, config.Int("dailyGoal", -1))
+	summary += "---------------------\n---------------------\n"
+	summary += plainJob
+
+	return summary, nil
+}
+
+func getTodaysJobFromFile() ([]utils.Job, error) {
+	// Get jobs from today from the summary directory, return as a slice of Job
 	// Get today's date as a string prefix
 	today := time.Now().Format("2006-01-02")
 
 	// Directory where the files are stored
 	uploadsDir := config.String("rootFolder")
-
+	summaryDir := filepath.Join(uploadsDir, "summary")
 	// Open the directory
-	files, err := os.ReadDir(uploadsDir)
+	files, err := os.ReadDir(summaryDir)
+	var allSummary []utils.Job
 	if err != nil {
-		log.Fatal("Error reading directory:", err)
-		return "", err
+		log.Fatal("Error reading summary directory:", err)
+		return allSummary, err
 	}
-	count, err := CountTodayJobs() // create a summary string: currently just concatenating all the OCR
-	if err != nil {
-		return "summarizer error", err
-	}
-	var summary string
-	summary += fmt.Sprintf("Today's work summary: (%s,%s) \n", count, config.Int("dailyGoal", -1))
-	summary += "---------------------\n"
 	// Iterate over the files in the directory
 	for _, file := range files {
 		// Check if the file name starts with today's date and has a .txt extension
-		if strings.HasPrefix(file.Name(), today) && strings.HasSuffix(file.Name(), ".txt") {
+		if strings.HasPrefix(file.Name(), today) && strings.HasSuffix(file.Name(), ".json") {
 			// Read the file
-			content, err := os.ReadFile(fmt.Sprintf("%s/%s", uploadsDir, file.Name()))
+			var job utils.Job
+			content, err := os.ReadFile(fmt.Sprintf("%s/%s", summaryDir, file.Name()))
 			if err != nil {
 				fmt.Println("Error reading file:", file.Name(), err)
 				continue // Skip to the next file upon error
 			}
-			// Concatenate the content to the summary
-			summary += string(content) + "\n" // Adding a newline for separation
+			err = json.Unmarshal(content, &job)
+			if err != nil {
+				fmt.Println("Error unmarshaling JSON:", err)
+				continue // Skip to the next file upon error
+			}
+			allSummary = append(allSummary, job)
 		}
 	}
-
-	return summary, nil
+	return allSummary, nil
 }
 
 func SendSummary() {
