@@ -194,7 +194,7 @@ func SummarizeTodaysWork() (string, error) {
 	return summary, nil
 }
 
-func getTodaysJobFromFile() ([]utils.Job, error) {
+func GetTodaysJobFromFile() ([]utils.Job, error) {
 	// Get jobs from today from the summary directory, return as a slice of Job
 	// Get today's date as a string prefix
 	today := time.Now().Format("2006-01-02")
