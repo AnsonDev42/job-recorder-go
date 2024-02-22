@@ -174,7 +174,7 @@ func SummarizeTodaysWork() (string, error) {
 	if err != nil {
 		return "summarizer error", err
 	}
-	jobs, err := getTodaysJobFromFile()
+	jobs, err := GetTodaysJobFromFile()
 	if err != nil {
 		return "summarizer error", err
 	}
@@ -222,7 +222,7 @@ func getTodaysJobFromFile() ([]utils.Job, error) {
 			}
 			err = json.Unmarshal(content, &job)
 			if err != nil {
-				fmt.Println("Error unmarshaling JSON:", err)
+				fmt.Println("Error unmarshalling JSON:", err)
 				continue // Skip to the next file upon error
 			}
 			allSummary = append(allSummary, job)
