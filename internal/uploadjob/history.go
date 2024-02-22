@@ -3,6 +3,7 @@ package uploadjob
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"os"
 	"strconv"
@@ -42,11 +43,14 @@ func CreateHistoryTable(uploadDir string) *widget.Table {
 			return len(fileInfos), 3 // Rows, Columns
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("") // This will create a new cell
+			return NewHoverLabel("", "") // Create a new HoverLabel for each cell
 		},
 		func(id widget.TableCellID, cell fyne.CanvasObject) {
-			// Set the cell value. id.Row and id.Col will tell you which cell you're populating
-			cell.(*widget.Label).SetText(fileInfos[id.Row][id.Col])
+			//	 use the cell hover effect
+			hoverLabel := cell.(*HoverLabel)
+			hoverLabel.Text = fileInfos[id.Row][id.Col]
+			hoverLabel.hoverText = fileInfos[id.Row][id.Col]
+			hoverLabel.Refresh()
 		},
 	)
 	// set custom header: show column names and row numbers
@@ -71,12 +75,38 @@ func CreateHistoryTable(uploadDir string) *widget.Table {
 
 	// Set a minimum width for the table to ensure content is less likely to overlap
 	table.SetColumnWidth(0, 100)
-	table.SetColumnWidth(1, 100)
+	table.SetColumnWidth(1, 150)
 	table.SetColumnWidth(2, 300)
 
-	// Customize each column's width (not directly supported, but you can indirectly influence it)
-	// For example, you can format your data to ensure it fits within your designated widths
-	// This step is more about preparing your data (e.g., truncating file names, adjusting date formats) to fit
-
 	return table
+}
+
+type HoverLabel struct {
+	widget.Label
+	hoverText string
+}
+
+func NewHoverLabel(text, hoverText string) *HoverLabel {
+	l := &HoverLabel{}
+	l.Text = text
+	l.hoverText = hoverText
+	l.ExtendBaseWidget(l)
+	return l
+}
+
+func (l *HoverLabel) MouseIn(*desktop.MouseEvent) {
+	// Optionally show hover text or a tooltip.
+	l.TextStyle.Bold = true
+	l.SetText(l.hoverText)
+	l.Refresh()
+}
+
+func (l *HoverLabel) MouseMoved(*desktop.MouseEvent) {
+}
+
+func (l *HoverLabel) MouseOut() {
+	// Hide the hover text or tooltip.
+	l.TextStyle.Bold = false
+	l.SetText(l.Text)
+	l.Refresh()
 }
