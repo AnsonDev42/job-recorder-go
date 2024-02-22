@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
@@ -25,27 +24,20 @@ func ShowSettingsUI(window fyne.Window, content *fyne.Container, rootFolder *str
 		}, window)
 	})
 
-	// set, bind,update json for the daily goal
-	dailyGoal := binding.NewInt()
-	dailyGoal.Set(config.Int("dailyGoal", 10))
-	dW := widget.NewLabelWithData(binding.IntToString(dailyGoal))
-	dChangeDailyGoal := widget.NewEntryWithData(binding.IntToString(dailyGoal))
-	dChangeDailyGoal.OnChanged = func(string) {
-		newGoal, _ := dailyGoal.Get()
-		config.Set("dailyGoal", newGoal)
-		SaveConfig()
-	}
-
+	dailyGoal := widget.NewEntry()
+	dailyGoal.SetText(config.String("dailyGoal", "10"))
 	tgApiKey := widget.NewEntry()
 	tgApiKey.SetText(config.String("tgApi", ""))
 	tgReceiverID := widget.NewEntry()
 	tgReceiverID.SetText(config.String("tgReceiverID", ""))
+	oaiAPIKey := widget.NewEntry()
+	oaiAPIKey.SetText(config.String("openaiKey", ""))
 
-	// Save button
-	saveButton := widget.NewButton("Save telegram settings", func() {
+	// Save action
+	saveAction := func() {
 		// Assuming you have the logic to get new values from your UI elements
-		newRootFolder := *rootFolder       // Example for folder path, adjust as needed
-		newDailyGoal, _ := dailyGoal.Get() // Assuming dailyGoal is a binding.Int
+		newRootFolder := *rootFolder   // Example for folder path, adjust as needed
+		newDailyGoal := dailyGoal.Text // Assuming dailyGoal is a binding.Int
 		newTgApi := tgApiKey.Text
 		newTgReceiverID := tgReceiverID.Text
 
@@ -54,30 +46,40 @@ func ShowSettingsUI(window fyne.Window, content *fyne.Container, rootFolder *str
 		config.Set("dailyGoal", newDailyGoal)
 		config.Set("tgApi", newTgApi)
 		config.Set("tgReceiverID", newTgReceiverID)
+		config.Set("openaiKey", oaiAPIKey.Text)
 
 		// Call SaveConfig to write changes to file
 		SaveConfig()
 		// Optionally, show a dialog indicating success
 		dialog.ShowInformation("Settings", "Settings saved successfully!", window)
-	})
-
+	}
+	settingsForm := &widget.Form{
+		Items: []*widget.FormItem{ // we can specify items in the constructor
+			{Text: "Daily Goal", Widget: dailyGoal},
+			{Text: "Telegram API key", Widget: tgApiKey},
+			{Text: "Telegram receiver ID", Widget: tgReceiverID},
+			{Text: "OpenAI API key", Widget: oaiAPIKey},
+		},
+		OnSubmit: func() { // optional, handle form submission
+			log.Println("tg api :", tgApiKey.Text)
+			log.Println("tg chatID:", tgReceiverID.Text)
+			log.Println("daily goal:", dailyGoal.Text)
+			saveAction()
+		},
+	}
+	settingsForm.SubmitText = "Save Settings"
 	// Layout your settings UI
-	settingsForm := container.NewVBox(
+	settingsBox := container.NewVBox(
 		widget.NewLabel("Telegram Notification Settings"),
-		// Include your other settings widgets here
-		tgApiKey,
-		tgReceiverID,
-		saveButton, // Add the save button to the UI
+		settingsForm,
 	)
 
 	// Update the content container to include the new settings form
-	content.Objects = []fyne.CanvasObject{settingsForm}
+	content.Objects = []fyne.CanvasObject{settingsBox}
 	content.Refresh()
-	dShowDailyGoal := widget.NewLabel("Current Setting for daily goal is: ")
-	dailGoalRow := container.NewHBox(dShowDailyGoal, dW, layout.NewSpacer(), dChangeDailyGoal)
 
 	content.Objects = []fyne.CanvasObject{
-		container.NewVBox(dailGoalRow, settingsForm, layout.NewSpacer(), selectFolderButton),
+		container.NewVBox(settingsForm, layout.NewSpacer(), selectFolderButton),
 	}
 	content.Refresh()
 }

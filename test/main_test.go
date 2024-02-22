@@ -11,7 +11,7 @@ func TestConvertimage(t *testing.T) {
 	uploadDir := "testdata"
 
 	// Implement the clipboard reading and image saving logic here
-	imgData, _ := os.ReadFile("2024-02-18-14-15-10.951.png")
+	imgData, _ := os.ReadFile("AMEX.png")
 	// Assume imgData is PNG encoded. Save it to the upload directory.
 	uploadFileTime := time.Now().Format("2006-01-02-15-04-05.000")
 	uploadFileName := uploadFileTime + ".png"

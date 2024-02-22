@@ -18,9 +18,6 @@ import (
 	"time"
 )
 
-func countDaily(today *string) {
-
-}
 func main() {
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Job recorder go!")
@@ -42,7 +39,7 @@ func main() {
 	counterLabel := widget.NewLabel("Images uploaded today: 0")
 	counterLabel.TextStyle = fyne.TextStyle{Bold: true}
 	counterLabel.Resize(fyne.NewSize(200, 100))
-	_, err = uploadjob.UpdateCounterLabel(counterLabel, uploadDir)
+	_, err = uploadjob.UpdateCounterLabel(counterLabel)
 	if err != nil {
 		log.Fatalf("failed to update counter label: %s", err)
 	} // Initial count update
@@ -54,7 +51,7 @@ func main() {
 	}
 	// Setup Counter updator
 	updateCounterCh := make(chan int)
-	go uploadjob.CounterUpdator(updateCounterCh, counterLabel, uploadDir)
+	go uploadjob.CounterUpdator(updateCounterCh, counterLabel)
 
 	// Set up the menu and content area
 	menu := setupMenu(myWindow, content, &uploadDir, updateCounterCh)
@@ -98,6 +95,10 @@ func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string, u
 	if err != nil {
 		panic(err)
 	}
+	shortCutAction := func() {
+		uploadjob.ShowUploadUI(window, content, uploadDir, updateCounterCh)
+	}
+	defer shortCutAction()
 	uploadButton := widget.NewButton("Upload", func() {
 		uploadjob.ShowUploadUI(window, content, uploadDir, updateCounterCh)
 	})
@@ -114,5 +115,11 @@ func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string, u
 		// Implement settings view
 		uploadjob.ShowSettingsUI(window, content, uploadDir)
 	})
-	return container.NewVBox(uploadButton, historyButton, settingsButton)
+
+	summaryTodayButton := widget.NewButton("Summary Today", func() {
+		go uploadjob.SendSummary()
+		//dialog.ShowInformation("Summary", "sending Summary...", window)
+	})
+
+	return container.NewVBox(uploadButton, historyButton, settingsButton, summaryTodayButton)
 }

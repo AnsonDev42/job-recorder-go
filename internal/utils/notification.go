@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"context"
 	"github.com/go-co-op/gocron"
 	"github.com/nikoksr/notify"
 	"github.com/nikoksr/notify/service/telegram"
@@ -18,12 +17,6 @@ func SetupTelegramBot(apiToken string, receiverID string) (err error) {
 	telegramService.AddReceivers(rID)
 	notify.UseServices(telegramService)
 
-	// Send a test message.
-	_ = notify.Send(
-		context.Background(),
-		"Subject/Title",
-		"The actual message - Hello, you awesome gophers! :)",
-	)
 	return nil
 }
 

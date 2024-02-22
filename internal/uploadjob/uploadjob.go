@@ -2,6 +2,7 @@ package uploadjob
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -19,6 +20,45 @@ import (
 	"time"
 )
 
+func uploadJobFromByte(imgData []byte, uploadDir string, updateCounterCh chan int) (string, string, error) {
+	// Assume imgData is PNG encoded. Save it to the upload directory.
+	uploadFileTime := time.Now().Format("2006-01-02-15-04-05.000")
+	uploadFileName := uploadFileTime + ".png"
+	ocrFileName := uploadFileTime + ".txt"
+	filePath := filepath.Join(uploadDir, uploadFileName) // Consider generating unique names
+	ocrPath := filepath.Join(uploadDir, ocrFileName)
+	err := os.WriteFile(filePath, imgData, 0644)
+	if err != nil {
+		return "", uploadFileTime, err
+	}
+	updateCounterCh <- 1
+	word, err := utils.Img2word(&filePath, &ocrPath)
+	if err != nil {
+		return "", uploadFileTime, err
+	}
+	return word, uploadFileTime, nil
+
+}
+func saveJobSummary(job utils.Job, uploadDir string, uploadFileTime string) error {
+	// Save the job summary to a file
+	summaryFileName := uploadFileTime + ".json"
+	// check if uploadDir/summary exists, if not create it
+	summaryDir := filepath.Join(uploadDir, "summary")
+	if _, err := os.Stat(summaryDir); os.IsNotExist(err) {
+		err := os.Mkdir(summaryDir, 0755)
+		if err != nil {
+			return err
+		}
+	}
+	summaryPath := filepath.Join(uploadDir, "summary", summaryFileName)
+	jsonBytes, err := json.MarshalIndent(job, "", "  ")
+	if err != nil {
+		fmt.Println("Error marshaling to JSON:", err)
+		return err
+	}
+	err = os.WriteFile(summaryPath, jsonBytes, 0644)
+	return err
+}
 func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string, updateCounterCh chan int) {
 	uploadFileButton := widget.NewButton("Upload File", func() {
 		dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
@@ -31,49 +71,49 @@ func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string
 
 				}
 			}(reader)
-
-			// copy the file into the uploadDir
-			uploadFileName := filepath.Base(reader.URI().Path())
-			uploadFilePath := filepath.Join(*uploadDir, uploadFileName)
 			imgData, err := io.ReadAll(reader)
 			if err != nil {
 				dialog.ShowError(err, window)
 				return
 			}
-			err = os.WriteFile(uploadFilePath, imgData, 0644)
+			ocrResult, ftime, err := uploadJobFromByte(imgData, *uploadDir, updateCounterCh)
 			if err != nil {
-				dialog.ShowError(err, window)
 				return
 			}
-			dialog.ShowInformation("Success", "File uploaded successfully.", window)
+			job, err := utils.SummarizeText(ocrResult)
+			go func() {
+				err := saveJobSummary(job, *uploadDir, ftime)
+				if err != nil {
+					dialog.ShowError(err, window)
+				}
+			}()
+			dialog.ShowInformation("Summary result:", fmt.Sprint(job), window)
 		}, window)
-		updateCounterCh <- 1
 	})
 
 	uploadClipboardButton := widget.NewButton("Upload from Clipboard", func() {
 		// Implement the clipboard reading and image saving logic here
 		imgData := clipboard.Read(clipboard.FmtImage)
 		// Assume imgData is PNG encoded. Save it to the upload directory.
-		uploadFileTime := time.Now().Format("2006-01-02-15-04-05.000")
-		uploadFileName := uploadFileTime + ".png"
-		ocrFileName := uploadFileTime + ".txt"
-		filePath := filepath.Join(*uploadDir, uploadFileName) // Consider generating unique names
-		ocrPath := filepath.Join(*uploadDir, ocrFileName)
-		err := os.WriteFile(filePath, imgData, 0644)
+		ocrResult, ftime, err := uploadJobFromByte(imgData, *uploadDir, updateCounterCh)
 		if err != nil {
 			dialog.ShowError(err, window)
 			return
 		}
-		updateCounterCh <- 1
-		//dialog.ShowInformation("Success", "Image from clipboard uploaded successfully.", window)
-		time.Sleep(2 * time.Second)
 
-		word, err := utils.Img2word(&filePath, &ocrPath)
+		job, err := utils.SummarizeText(ocrResult)
 		if err != nil {
 			dialog.ShowError(err, window)
 			return
 		}
-		dialog.ShowInformation("OCR Results", word, window)
+		go func() {
+			err := saveJobSummary(job, *uploadDir, ftime)
+			if err != nil {
+				dialog.ShowError(err, window)
+			}
+		}()
+		dialog.ShowInformation("Summary result:", fmt.Sprint(job), window)
+
 		//fmt.Println(word)
 		return
 	})
@@ -84,9 +124,9 @@ func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string
 	content.Refresh()
 }
 
-func CounterUpdator(updateCounterCh chan int, counterLabel *widget.Label, uploadDir string) {
+func CounterUpdator(updateCounterCh chan int, counterLabel *widget.Label) {
 	for range updateCounterCh {
-		count, err := UpdateCounterLabel(counterLabel, uploadDir)
+		count, err := UpdateCounterLabel(counterLabel)
 		if err != nil {
 			fmt.Println("failed to update counter")
 		}
@@ -117,7 +157,7 @@ func CountTodayJobs() (int, error) {
 	}
 	return count, nil
 }
-func UpdateCounterLabel(label *widget.Label, uploadDir string) (count int, err error) {
+func UpdateCounterLabel(label *widget.Label) (count int, err error) {
 	count, err = CountTodayJobs()
 	if err != nil {
 		return 0, err
@@ -130,41 +170,65 @@ func UpdateCounterLabel(label *widget.Label, uploadDir string) (count int, err e
 }
 
 func SummarizeTodaysWork() (string, error) {
+	count, err := CountTodayJobs() // create a summary string: currently just concatenating all the OCR
+	if err != nil {
+		return "summarizer error", err
+	}
+	jobs, err := getTodaysJobFromFile()
+	if err != nil {
+		return "summarizer error", err
+	}
+	plainJob := ""
+	for _, job := range jobs {
+		jobText := fmt.Sprintf("Company: %s\nTitle: %s\nDescription: %s\n", job.JobTitle, job.CompanyName, job.JobDescription)
+		plainJob += jobText + "\n"
+	}
+
+	var summary string
+	summary += "---------------------\n---------------------\n"
+	summary += fmt.Sprintf("%s Today's work summary: %d / %d\n", time.Now().Format("2006-01-02"),
+		count, config.Int("dailyGoal", -1))
+	summary += "---------------------\n---------------------\n"
+	summary += plainJob
+
+	return summary, nil
+}
+
+func getTodaysJobFromFile() ([]utils.Job, error) {
+	// Get jobs from today from the summary directory, return as a slice of Job
 	// Get today's date as a string prefix
 	today := time.Now().Format("2006-01-02")
 
 	// Directory where the files are stored
 	uploadsDir := config.String("rootFolder")
-
+	summaryDir := filepath.Join(uploadsDir, "summary")
 	// Open the directory
-	files, err := os.ReadDir(uploadsDir)
+	files, err := os.ReadDir(summaryDir)
+	var allSummary []utils.Job
 	if err != nil {
-		log.Fatal("Error reading directory:", err)
-		return "", err
+		log.Fatal("Error reading summary directory:", err)
+		return allSummary, err
 	}
-	count, err := CountTodayJobs() // create a summary string: currently just concatenating all the OCR
-	if err != nil {
-		return "summarizer error", err
-	}
-	var summary string
-	summary += fmt.Sprintf("Today's work summary: (%s,%s) \n", count, config.Int("dailyGoal", -1))
-	summary += "---------------------\n"
 	// Iterate over the files in the directory
 	for _, file := range files {
 		// Check if the file name starts with today's date and has a .txt extension
-		if strings.HasPrefix(file.Name(), today) && strings.HasSuffix(file.Name(), ".txt") {
+		if strings.HasPrefix(file.Name(), today) && strings.HasSuffix(file.Name(), ".json") {
 			// Read the file
-			content, err := os.ReadFile(fmt.Sprintf("%s/%s", uploadsDir, file.Name()))
+			var job utils.Job
+			content, err := os.ReadFile(fmt.Sprintf("%s/%s", summaryDir, file.Name()))
 			if err != nil {
 				fmt.Println("Error reading file:", file.Name(), err)
 				continue // Skip to the next file upon error
 			}
-			// Concatenate the content to the summary
-			summary += string(content) + "\n" // Adding a newline for separation
+			err = json.Unmarshal(content, &job)
+			if err != nil {
+				fmt.Println("Error unmarshaling JSON:", err)
+				continue // Skip to the next file upon error
+			}
+			allSummary = append(allSummary, job)
 		}
 	}
-
-	return summary, nil
+	return allSummary, nil
 }
 
 func SendSummary() {
