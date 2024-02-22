@@ -118,5 +118,11 @@ func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string, u
 		// Implement settings view
 		uploadjob.ShowSettingsUI(window, content, uploadDir)
 	})
-	return container.NewVBox(uploadButton, historyButton, settingsButton)
+
+	summaryTodayButton := widget.NewButton("Summary Today", func() {
+		go uploadjob.SendSummary()
+		//dialog.ShowInformation("Summary", "sending Summary...", window)
+	})
+
+	return container.NewVBox(uploadButton, historyButton, settingsButton, summaryTodayButton)
 }
