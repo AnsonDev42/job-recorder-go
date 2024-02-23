@@ -1,13 +1,13 @@
 package uploadjob
 
 import (
-	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
-	"log"
+	"golang.design/x/clipboard"
 	"os"
-	"time"
+	"strconv"
 )
 
 func ShowHistoryUI(content *fyne.Container, rootFolder string) {
@@ -29,43 +29,88 @@ func ShowHistoryUI(content *fyne.Container, rootFolder string) {
 }
 
 func CreateHistoryTable(uploadDir string) *widget.Table {
-	files, err := os.ReadDir(uploadDir)
+	todayJobs, filenames, err := GetTodaysJobFromFile()
 	if err != nil {
-		log.Println("Failed to read upload directory:", err)
 		return nil
 	}
-
 	// Define your table data
-	fileInfos := make([][2]string, len(files))
-	for i, fileInfo := range files {
-		file, err := fileInfo.Info()
-		if err != nil {
-			fmt.Println("Error getting file info:", err)
-			continue
-		}
-		fileInfos[i] = [2]string{file.Name(), file.ModTime().Format(time.RFC1123)}
+	fileInfos := make([][4]string, len(todayJobs))
+	for i, job := range todayJobs {
+		fileInfos[i] = [4]string{job.JobTitle, job.CompanyName, filenames[i][:len(filenames[i])-4], job.JobDescription}
 	}
 
-	table := widget.NewTable(
+	table := widget.NewTableWithHeaders(
 		func() (int, int) {
-			return len(fileInfos), 2 // Rows, Columns
+			return len(fileInfos), 4 // Rows, Columns
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("") // This will create a new cell
+			return NewHoverLabel("", "") // Create a new HoverLabel for each cell
 		},
 		func(id widget.TableCellID, cell fyne.CanvasObject) {
-			// Set the cell value. id.Row and id.Col will tell you which cell you're populating
-			cell.(*widget.Label).SetText(fileInfos[id.Row][id.Col])
+			//	 use the cell hover effect
+			hoverLabel := cell.(*HoverLabel)
+			hoverLabel.Text = fileInfos[id.Row][id.Col]
+			hoverLabel.hoverText = fileInfos[id.Row][id.Col]
+			hoverLabel.Refresh()
 		},
 	)
+	// set custom header: show column names and row numbers
+	table.CreateHeader = func() fyne.CanvasObject {
+		return container.NewHBox(
+			widget.NewLabel(""),
+			widget.NewLabel(""),
+			widget.NewLabel(""),
+			widget.NewLabel(""),
+		)
+	}
+	headerLabels := []string{"Position", "Company", "Time", "Summary"} // Labels for headers
+	table.UpdateHeader = func(id widget.TableCellID, template fyne.CanvasObject) {
+		if id.Col >= 0 && id.Col < len(headerLabels) {
+			header := template.(*fyne.Container).Objects[id.Col].(*widget.Label) // Access the specific header label by index
+			header.SetText(headerLabels[id.Col])                                 // Set the text for the header based on the column
+		}
+		if id.Row >= 0 {
+			header := template.(*fyne.Container).Objects[0].(*widget.Label) // Access the specific header label by index
+			header.SetText(strconv.Itoa(id.Row))                            // Set the text for the header based on the column
+		}
+	}
 
 	// Set a minimum width for the table to ensure content is less likely to overlap
-	table.SetColumnWidth(0, 300)
-	table.SetColumnWidth(1, 300)
-
-	// Customize each column's width (not directly supported, but you can indirectly influence it)
-	// For example, you can format your data to ensure it fits within your designated widths
-	// This step is more about preparing your data (e.g., truncating file names, adjusting date formats) to fit
+	table.SetColumnWidth(0, 100)
+	table.SetColumnWidth(1, 150)
+	table.SetColumnWidth(2, 150)
+	table.SetColumnWidth(3, 300)
 
 	return table
+}
+
+type HoverLabel struct {
+	widget.Label
+	hoverText string
+}
+
+func NewHoverLabel(text, hoverText string) *HoverLabel {
+	l := &HoverLabel{}
+	l.Text = text
+	l.hoverText = hoverText
+	l.ExtendBaseWidget(l)
+	return l
+}
+
+func (l *HoverLabel) MouseIn(*desktop.MouseEvent) {
+	// Optionally show hover text or a tooltip.
+	l.TextStyle.Bold = true
+	l.SetText(l.hoverText)
+	l.Refresh()
+	clipboard.Write(clipboard.FmtText, []byte(l.hoverText))
+}
+
+func (l *HoverLabel) MouseMoved(*desktop.MouseEvent) {
+}
+
+func (l *HoverLabel) MouseOut() {
+	// Hide the hover text or tooltip.
+	l.TextStyle.Bold = false
+	l.SetText(l.Text)
+	l.Refresh()
 }
