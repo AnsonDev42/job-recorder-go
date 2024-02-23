@@ -124,12 +124,13 @@ func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string
 	content.Refresh()
 }
 
-func CounterUpdator(updateCounterCh chan int, counterLabel *widget.Label) {
+func CounterUpdator(updateCounterCh chan int, counterLabel *widget.Label, pbar *widget.ProgressBar) {
 	for range updateCounterCh {
 		count, err := UpdateCounterLabel(counterLabel)
 		if err != nil {
 			fmt.Println("failed to update counter")
 		}
+		pbar.SetValue(float64(count) / float64(config.Int("dailyGoal", 10)))
 		err = notify.Send(
 			context.Background(),
 			"Another hardworking day!",

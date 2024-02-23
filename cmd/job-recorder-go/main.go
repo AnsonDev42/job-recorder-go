@@ -49,15 +49,18 @@ func main() {
 	if err != nil {
 		panic("error setting up telegram notification!")
 	}
+	// Set up the progress bar for the daily goal
+	progressbar := uploadjob.CreateProgressBar()
 	// Setup Counter updator
 	updateCounterCh := make(chan int)
-	go uploadjob.CounterUpdator(updateCounterCh, counterLabel)
+	go uploadjob.CounterUpdator(updateCounterCh, counterLabel, progressbar)
 
 	// Set up the menu and content area
 	menu := setupMenu(myWindow, content, &uploadDir, updateCounterCh)
 	menuContentSplit := container.NewHSplit(menu, content)
 	menuContentSplit.Offset = 0.2 // Adjust the initial split ratio
-	mainContent := container.NewVSplit(container.New(layout.NewCenterLayout(), counterLabel), menuContentSplit)
+	progressContent := container.NewVBox(counterLabel, progressbar)
+	mainContent := container.NewVSplit(progressContent, menuContentSplit)
 	mainContent.Offset = 0.5
 	s := gocron.NewScheduler(time.UTC)
 
