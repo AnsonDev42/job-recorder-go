@@ -5,7 +5,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
@@ -49,37 +48,47 @@ func main() {
 	if err != nil {
 		panic("error setting up telegram notification!")
 	}
+	// Set up the progress bar for the daily goal
+	progressbar := uploadjob.CreateProgressBar()
 	// Setup Counter updator
 	updateCounterCh := make(chan int)
-	go uploadjob.CounterUpdator(updateCounterCh, counterLabel)
+	go uploadjob.CounterUpdator(updateCounterCh, counterLabel, progressbar)
 
 	// Set up the menu and content area
 	menu := setupMenu(myWindow, content, &uploadDir, updateCounterCh)
 	menuContentSplit := container.NewHSplit(menu, content)
 	menuContentSplit.Offset = 0.2 // Adjust the initial split ratio
-	mainContent := container.NewVSplit(container.New(layout.NewCenterLayout(), counterLabel), menuContentSplit)
-	mainContent.Offset = 0.5
-	s := gocron.NewScheduler(time.UTC)
+	progressContent := container.NewVBox(layout.NewSpacer(), container.NewCenter(counterLabel), layout.NewSpacer(), progressbar, layout.NewSpacer())
+	mainContent := container.NewVSplit(progressContent, menuContentSplit)
+	mainContent.Offset = 0.35
 
+	// Set up the scheduler for the daily summary
+	s := gocron.NewScheduler(time.UTC)
 	utils.SetSummaryScheduler(s, uploadjob.SendSummary)
 
+	// Set the menubar app for the desktop
 	if desk, ok := myApp.(desktop.App); ok {
 		m := fyne.NewMenu("Job-Recorder",
-			fyne.NewMenuItem("Show", func() {
+			fyne.NewMenuItem("Show Main Window", func() {
 				myWindow.Show()
+			}),
+			fyne.NewMenuItem("Copy jd screenshot From Clipboard", func() {
+				msg, err := uploadjob.ClipboardAction(updateCounterCh, &uploadDir)
+				if err != nil {
+					//popup error
+					myApp.SendNotification(&fyne.Notification{
+						Title:   "Error",
+						Content: fmt.Sprint("Failed to upload from clipboard: ", err),
+					})
+				}
+				myApp.SendNotification(&fyne.Notification{
+					Title:   "Summary result",
+					Content: msg,
+				})
 			}))
-		fyne.NewMenuItem("Quit", func() {
-			myApp.Quit()
-		})
-		fyne.NewMenuItem("Copy from clipboard", func() {
-			//todo: atomic upload from the uploadjob UI
-			//uploadjob.UploadFromClipboard(&uploadDir, updateCounterCh)
-			dialog.ShowInformation("Not implemented yet", "This feature is not implemented yet", myWindow)
-		})
 
 		desk.SetSystemTrayMenu(m)
 	}
-
 	myWindow.SetContent(widget.NewLabel("Fyne System Tray"))
 	myWindow.SetCloseIntercept(func() {
 		myWindow.Hide()
@@ -95,10 +104,13 @@ func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string, u
 	if err != nil {
 		panic(err)
 	}
+	// set up shortcut
 	shortCutAction := func() {
 		uploadjob.ShowUploadUI(window, content, uploadDir, updateCounterCh)
 	}
 	defer shortCutAction()
+
+	// Set up the menu buttons: Upload, History, Settings, Summary Today
 	uploadButton := widget.NewButton("Upload", func() {
 		uploadjob.ShowUploadUI(window, content, uploadDir, updateCounterCh)
 	})
@@ -120,6 +132,5 @@ func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string, u
 		go uploadjob.SendSummary()
 		//dialog.ShowInformation("Summary", "sending Summary...", window)
 	})
-
 	return container.NewVBox(uploadButton, historyButton, settingsButton, summaryTodayButton)
 }
