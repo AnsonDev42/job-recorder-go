@@ -7,7 +7,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/go-co-op/gocron"
 	"github.com/gookit/config/v2"
@@ -62,8 +61,9 @@ func main() {
 	progressContent := container.NewVBox(counterLabel, progressbar)
 	mainContent := container.NewVSplit(progressContent, menuContentSplit)
 	mainContent.Offset = 0.5
-	s := gocron.NewScheduler(time.UTC)
 
+	// Set up the scheduler for the daily summary
+	s := gocron.NewScheduler(time.UTC)
 	utils.SetSummaryScheduler(s, uploadjob.SendSummary)
 
 	if desk, ok := myApp.(desktop.App); ok {
@@ -82,7 +82,6 @@ func main() {
 
 		desk.SetSystemTrayMenu(m)
 	}
-
 	myWindow.SetContent(widget.NewLabel("Fyne System Tray"))
 	myWindow.SetCloseIntercept(func() {
 		myWindow.Hide()
@@ -98,10 +97,13 @@ func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string, u
 	if err != nil {
 		panic(err)
 	}
+	// set up shortcut
 	shortCutAction := func() {
 		uploadjob.ShowUploadUI(window, content, uploadDir, updateCounterCh)
 	}
 	defer shortCutAction()
+
+	// Set up the menu buttons: Upload, History, Settings, Summary Today
 	uploadButton := widget.NewButton("Upload", func() {
 		uploadjob.ShowUploadUI(window, content, uploadDir, updateCounterCh)
 	})
