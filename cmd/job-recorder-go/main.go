@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/go-co-op/gocron"
 	"github.com/gookit/config/v2"
@@ -57,9 +58,9 @@ func main() {
 	menu := setupMenu(myWindow, content, &uploadDir, updateCounterCh)
 	menuContentSplit := container.NewHSplit(menu, content)
 	menuContentSplit.Offset = 0.2 // Adjust the initial split ratio
-	progressContent := container.NewVBox(counterLabel, progressbar)
+	progressContent := container.NewVBox(layout.NewSpacer(), container.NewCenter(counterLabel), layout.NewSpacer(), progressbar, layout.NewSpacer())
 	mainContent := container.NewVSplit(progressContent, menuContentSplit)
-	mainContent.Offset = 0.5
+	mainContent.Offset = 0.35
 
 	// Set up the scheduler for the daily summary
 	s := gocron.NewScheduler(time.UTC)
@@ -131,6 +132,5 @@ func setupMenu(window fyne.Window, content *fyne.Container, uploadDir *string, u
 		go uploadjob.SendSummary()
 		//dialog.ShowInformation("Summary", "sending Summary...", window)
 	})
-
 	return container.NewVBox(uploadButton, historyButton, settingsButton, summaryTodayButton)
 }
