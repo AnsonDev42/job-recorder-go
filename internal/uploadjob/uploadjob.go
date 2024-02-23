@@ -92,30 +92,12 @@ func ShowUploadUI(window fyne.Window, content *fyne.Container, uploadDir *string
 	})
 
 	uploadClipboardButton := widget.NewButton("Upload from Clipboard", func() {
-		// Implement the clipboard reading and image saving logic here
-		imgData := clipboard.Read(clipboard.FmtImage)
-		// Assume imgData is PNG encoded. Save it to the upload directory.
-		ocrResult, ftime, err := uploadJobFromByte(imgData, *uploadDir, updateCounterCh)
+		s, err := ClipboardAction(updateCounterCh, uploadDir)
 		if err != nil {
 			dialog.ShowError(err, window)
 			return
 		}
-
-		job, err := utils.SummarizeText(ocrResult)
-		if err != nil {
-			dialog.ShowError(err, window)
-			return
-		}
-		go func() {
-			err := saveJobSummary(job, *uploadDir, ftime)
-			if err != nil {
-				dialog.ShowError(err, window)
-			}
-		}()
-		dialog.ShowInformation("Summary result:", fmt.Sprint(job), window)
-
-		//fmt.Println(word)
-		return
+		dialog.ShowInformation("Summary result:", s, window)
 	})
 
 	content.Objects = []fyne.CanvasObject{
@@ -140,6 +122,31 @@ func CounterUpdator(updateCounterCh chan int, counterLabel *widget.Label, pbar *
 			fmt.Errorf("failed to send the notification")
 		}
 	}
+}
+
+func ClipboardAction(updateCounterCh chan int, uploadDir *string) (string, error) {
+	// Read and upload image from clipboard, return the summary result
+	imgData := clipboard.Read(clipboard.FmtImage)
+	// Assume imgData is PNG encoded. Save it to the upload directory.
+	ocrResult, ftime, err := uploadJobFromByte(imgData, *uploadDir, updateCounterCh)
+	if err != nil {
+		return "", err
+	}
+
+	job, err := utils.SummarizeText(ocrResult)
+	if err != nil {
+		//dialog.ShowError(err, window)
+		return "", err
+	}
+	err = saveJobSummary(job, *uploadDir, ftime)
+	if err != nil {
+		//dialog.ShowError(err, window)
+		return "", err
+	}
+	//dialog.ShowInformation("Summary result:", fmt.Sprint(job), window)
+
+	//fmt.Println(word)
+	return fmt.Sprintf("Summary result:%s", job), nil
 }
 func CountTodayJobs() (int, error) {
 	uploadsDir := config.String("rootFolder")

@@ -5,7 +5,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/go-co-op/gocron"
@@ -66,19 +65,28 @@ func main() {
 	s := gocron.NewScheduler(time.UTC)
 	utils.SetSummaryScheduler(s, uploadjob.SendSummary)
 
+	// Set the menubar app for the desktop
 	if desk, ok := myApp.(desktop.App); ok {
 		m := fyne.NewMenu("Job-Recorder",
-			fyne.NewMenuItem("Show", func() {
+			fyne.NewMenuItem("Show Main Window", func() {
 				myWindow.Show()
+			}),
+			fyne.NewMenuItem("Copy jd screenshot From Clipboard", func() {
+				//todo: atomic upload from the uploadjob UI
+				//uploadjob.UploadFromClipboard(&uploadDir, updateCounterCh)
+				msg, err := uploadjob.ClipboardAction(updateCounterCh, &uploadDir)
+				if err != nil {
+					//popup error
+					myApp.SendNotification(&fyne.Notification{
+						Title:   "Error",
+						Content: fmt.Sprint("Failed to upload from clipboard: ", err),
+					})
+				}
+				myApp.SendNotification(&fyne.Notification{
+					Title:   "Summary result",
+					Content: msg,
+				})
 			}))
-		fyne.NewMenuItem("Quit", func() {
-			myApp.Quit()
-		})
-		fyne.NewMenuItem("Copy from clipboard", func() {
-			//todo: atomic upload from the uploadjob UI
-			//uploadjob.UploadFromClipboard(&uploadDir, updateCounterCh)
-			dialog.ShowInformation("Not implemented yet", "This feature is not implemented yet", myWindow)
-		})
 
 		desk.SetSystemTrayMenu(m)
 	}
