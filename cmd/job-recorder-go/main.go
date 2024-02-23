@@ -72,8 +72,6 @@ func main() {
 				myWindow.Show()
 			}),
 			fyne.NewMenuItem("Copy jd screenshot From Clipboard", func() {
-				//todo: atomic upload from the uploadjob UI
-				//uploadjob.UploadFromClipboard(&uploadDir, updateCounterCh)
 				msg, err := uploadjob.ClipboardAction(updateCounterCh, &uploadDir)
 				if err != nil {
 					//popup error
