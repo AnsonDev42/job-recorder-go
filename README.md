@@ -9,10 +9,10 @@ The idea for Job Recorder Go sparked from my own challenges while navigating the
 Instead putting your just-applied job info into multiple columns in Notion, you can just screenshot the job descrption, click the upload, local prepressed OCR texts and let **GPT summarise**(WIP) the info such as job title (level), company and expected salary.
 
 In addition, every day it sends you a email (for now only telegram bot notification) with the summarisation of your work today and encourage you ((WIP) if you reach the goal or not.
+![Upload-ui](https://github.com/AnsonDev42/job-recorder-go/assets/58594437/bee1a46c-95a1-49db-b518-36ede7187ae7)
+![Settings-ui](https://github.com/AnsonDev42/job-recorder-go/assets/58594437/ebd88053-72c1-4f77-aa61-045844844643)
+![History-ui](https://github.com/AnsonDev42/job-recorder-go/assets/58594437/b4ac59b9-ae97-489a-a007-69951c6113ca)
 
-![Settings-ui](https://github.com/AnsonDev42/job-recorder-go/assets/58594437/899ff06e-1597-4cda-9d65-76f03831c8ee)
-![Upload-ui](https://github.com/AnsonDev42/job-recorder-go/assets/58594437/ed8c2afe-4d94-4866-89db-81a8af14e20c)
-![History-ui](https://github.com/AnsonDev42/job-recorder-go/assets/58594437/89155414-b3b6-46c3-bb45-5e583fae4e00)
 
 ## Project usage
 A single binary executable file. 
@@ -37,3 +37,4 @@ This being my first Go project, I embraced the challenge of learning a new langu
 - ✔️ daily reminder (telegram bot, fill in GUI)
 - ✔️ due to system limitation, currently only support MacOS's local OCR (otherwise need to use tesseract, a pain in the ass dynamtic lib link issue for installation in multi-platforms).
 - 🚧 LLM support
+
